@@ -2081,38 +2081,61 @@
         });
         
         // OpenRouter API integration
-        async function fetchFromOpenRouter(prompt) {
-        try {
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": "Bearer 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",
-                    "HTTP-Referer": window.location.href,
-                    "X-Title": "Math Solver Hub",
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    "model": "deepseek/deepseek-chat-v3-0324:free",
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ]
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`API request failed with status ${response.status}`);
+        async function solveMathProblem(problem, showSteps = true) {
+            try {
+                const OPENROUTER_API_KEY = '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';
+                const YOUR_SITE_URL = window.location.href;
+                const YOUR_SITE_NAME = 'Math Solver Chat';
+                
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                        "HTTP-Referer": YOUR_SITE_URL,
+                        "X-Title": YOUR_SITE_NAME,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        "model": "deepseek/deepseek-chat-v3-0324",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": `You are an expert math tutor. ${showSteps ? 
+                                    "Provide detailed step-by-step solutions with explanations in clear, formatted HTML. Use <strong> for important terms and <sup>/<sub> for exponents/subscripts. Include relevant mathematical notation. Highlight the final solution in a clear box." : 
+                                    "Provide just the final answer."}`
+                            },
+                            {
+                                "role": "user",
+                                "content": `Solve this math problem: ${problem}`
+                            }
+                        ],
+                        "temperature": 0.3
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+                
+                const data = await response.json();
+                return data.choices?.[0]?.message?.content || "I couldn't solve this problem.";
+            } catch (error) {
+                console.error('API Error:', error);
+                return "Sorry, I encountered an error while solving this problem.";
             }
-
-            const data = await response.json();
-            return data.choices[0].message.content;
-        } catch (error) {
-            console.error("Error calling OpenRouter API:", error);
-            return "Sorry, an error occurred while fetching the response.";
         }
-    }
+        
+        // Replace the existing fetchFromOpenRouter function with this updated one
+        async function fetchFromOpenRouter(prompt) {
+            try {
+                // Call the solveMathProblem function with the user's prompt
+                const response = await solveMathProblem(prompt, true);
+                return response;
+            } catch (error) {
+                console.error("Error calling OpenRouter API:", error);
+                return "Sorry, an error occurred while fetching the response.";
+            }
+        }
         
         // Add message to chat
         function addMessage(text, sender) {
